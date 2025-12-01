@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>NEO — Smart Home (Multi Device)</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <style>
+        :root {
+            --bg1: #020617;
+            --card: #081224;
+            --glass: rgba(255, 255, 255, 0.03);
+            --accent: #00e5ff;
+            --accent2: #ff4f9a;
+            --radius: 14px;
+            color-scheme: dark;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, system-ui, Arial;
+            background: linear-gradient(135deg, #020617, #071125);
+            color: #e6f6ff;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 28px auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--accent);
+            letter-spacing: 1px;
+            font-size: 22px;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .voice-btn {
+            background: linear-gradient(90deg, var(--accent2), #ff7aa7);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(255, 80, 150, 0.12);
+        }
+
+        .status {
+            color: #ffd6ea;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        @media (max-width:980px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width:640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border-radius: var(--radius);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .icon {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            transition: all .25s ease;
+        }
+
+        /* 🌟 STRONG GLOW EFFECT FOR ALL DEVICE ICONS */
+        .glow-on {
+            box-shadow:
+                0 0 35px rgba(0, 200, 255, 1),
+                0 0 75px rgba(0, 200, 255, 0.9),
+                0 0 140px rgba(0, 200, 255, 0.85),
+                inset 0 0 35px rgba(0, 200, 255, 0.75);
+            transform: scale(1.06);
+            transition: all 0.25s ease-in-out;
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        /* When OFF — minimal glow */
+        .glow-off {
+            box-shadow:
+                0 0 5px rgba(0, 200, 255, 0.12),
+                inset 0 0 3px rgba(0, 200, 255, 0.08);
+            transform: scale(1);
+            transition: all 0.25s ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            from {
+                box-shadow:
+                    0 0 28px rgba(0, 200, 255, 0.9),
+                    0 0 60px rgba(0, 200, 255, 0.8),
+                    0 0 110px rgba(0, 200, 255, 0.7),
+                    inset 0 0 28px rgba(0, 200, 255, 0.65);
+            }
+
+            to {
+                box-shadow:
+                    0 0 48px rgba(0, 200, 255, 1),
+                    0 0 95px rgba(0, 200, 255, 0.95),
+                    0 0 160px rgba(0, 200, 255, 0.85),
+                    inset 0 0 45px rgba(0, 200, 255, 0.8);
+            }
+        }
+
+        .dev-name {
+            font-weight: 700;
+            color: #ccf7ff;
+            margin-bottom: 6px;
+        }
+
+        .dev-state {
+            font-size: 13px;
+            color: #9bdcff;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            background: transparent;
+            color: #eafcff;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .controls .primary {
+            background: linear-gradient(90deg, var(--accent), #6ff0ff);
+            color: #042026;
+            border: 0;
+        }
+
+        .range {
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        footer {
+            margin-top: 18px;
+            color: #9fdcff;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>NEO — Smart Home</h1>
+            <div class="top-actions">
+                <button id="voiceBtn" class="voice-btn">🎤 Speak to Neo</button>
+                <div id="voiceStatus" class="status">Ready</div>
+            </div>
+        </header>
+
+        <main>
+            <div class="grid">
+                <!-- Bulb -->
+                <div class="card" id="card-bulb">
+                    <div class="icon glow-off" id="icon-bulb" aria-hidden>
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 21h6v-1a2 2 0 0 0-2-2H11a2 2 0 0 0-2 2v1z" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M9.5 9.5a3.5 3.5 0 1 1 5 3.03V13a1 1 0 0 1-1 1h-3.02A3.5 3.5 0 0 1 9.5 9.5z"
+                                stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="dev-name">Bulb</div>
+                    <div class="dev-state" id="state-bulb">OFF • 100%</div>
+                    <div class="controls">
+                        <button onclick="emitToggle('bulb')" id="btn-bulb" class="primary">Toggle</button>
+                    </div>
+                    <input id="range-bulb" class="range" type="range" min="0" max="100" value="100"
+                        oninput="emitSetBrightness('bulb', this.value)" />
+                </div>
+
+                <!-- Fan -->
+                <div class="card" id="card-fan">
+                    <div class="icon glow-off" id="icon-fan"><svg width="44" height="44" viewBox="0 0 24 24"
+                            fill="none">
+                            <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.2" />
+                            <path
+                                d="M12 4v2M12 18v2M4 12h2M18 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"
+                                stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg></div>
+                    <div class="dev-name">Fan</div>
+                    <div class="dev-state" id="state-fan">OFF • Speed 0</div>
+                    <div class="controls">
+                        <button onclick="emitToggle('fan')">Toggle</button>
+                        <button onclick="emitIncrease('fan')">+</button>
+                        <button onclick="emitDecrease('fan')">-</button>
+                    </div>
+                </div>
+
+                <!-- AC -->
+                <div class="card" id="card-ac">
+                    <div class="icon glow-off" id="icon-ac"><svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M7 10h10" stroke="currentColor" stroke-width="1.2" />
+                        </svg></div>
+                    <div class="dev-name">AC</div>
+                    <div class="dev-state" id="state-ac">OFF • 24°C</div>
+                    <div class="controls">
+                        <button onclick="emitToggle('ac')">Toggle</button>
+                        <button onclick="emitDecrease('ac')">-</button>
+                        <button onclick="emitIncrease('ac')">+</button>
+                    </div>
+                </div>
+
+                <!-- TV -->
+                <div class="card" id="card-tv">
+                    <div class="icon glow-off" id="icon-tv"><svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="5" width="18" height="12" rx="1.5" stroke="currentColor"
+                                stroke-width="1.2" />
+                            <path d="M8 21h8" stroke="currentColor" stroke-width="1.2" />
+                        </svg></div>
+                    <div class="dev-name">TV</div>
+                    <div class="dev-state" id="state-tv">OFF</div>
+                    <div class="controls"><button onclick="emitToggle('tv')">Toggle</button></div>
+                </div>
+
+                <!-- Table Lamp -->
+                <div class="card" id="card-lamp">
+                    <div class="icon glow-off" id="icon-lamp"><svg width="44" height="44" viewBox="0 0 24 24"
+                            fill="none">
+                            <path d="M12 2l4 6H8l4-6z" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M7 12h10" stroke="currentColor" stroke-width="1.2" />
+                        </svg></div>
+                    <div class="dev-name">Table Lamp</div>
+                    <div class="dev-state" id="state-lamp">OFF • 100%</div>
+                    <div class="controls"><button onclick="emitToggle('lamp')">Toggle</button></div>
+                    <input id="range-lamp" class="range" type="range" min="0" max="100" value="100"
+                        oninput="emitSetBrightness('lamp', this.value)" />
+                </div>
+
+                <!-- Speaker -->
+                <div class="card" id="card-speaker">
+                    <div class="icon glow-off" id="icon-speaker"><svg width="44" height="44" viewBox="0 0 24 24"
+                            fill="none">
+                            <path d="M5 9v6h4l5 4V5L9 9H5z" stroke="currentColor" stroke-width="1.2" />
+                        </svg></div>
+                    <div class="dev-name">Speaker</div>
+                    <div class="dev-state" id="state-speaker">OFF • Vol 30</div>
+                    <div class="controls"><button onclick="emitToggle('speaker')">Toggle</button></div>
+                    <input id="range-speaker" class="range" type="range" min="0" max="100" value="30"
+                        oninput="emitSetVolume(this.value)" />
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            Tip: Try voice phrases like “Neo turn on fan”, “Neo set AC to 22”, “Neo set speaker volume to 40”.
+        </footer>
+    </div>
+
+    <script>
+        // connect to your server (port 5050)
+        const socket = io("http://127.0.0.1:5050");
+
+        // helper to set innerText if element exists
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        // helper handle icon glow classes
+        function setGlow(iconId, on) {
+            const el = document.getElementById(iconId);
+            if (!el) return;
+            el.classList.remove("glow-on", "glow-off");
+            el.classList.add(on ? "glow-on" : "glow-off");
+        }
+
+        // When server sends the state
+        socket.on("state_update", (newState) => {
+            // Bulb
+            if (newState.bulb) {
+                setText("state-bulb", `${newState.bulb.power} • ${newState.bulb.brightness}%`);
+                setGlow("icon-bulb", newState.bulb.power === "ON");
+                const r = document.getElementById("range-bulb"); if (r) r.value = newState.bulb.brightness;
+            }
+
+            // Fan
+            if (newState.fan) {
+                setText("state-fan", `${newState.fan.power} • Speed ${newState.fan.speed}`);
+                setGlow("icon-fan", newState.fan.power === "ON");
+            }
+
+            // AC
+            if (newState.ac) {
+                setText("state-ac", `${newState.ac.power} • ${newState.ac.temp}°C`);
+                setGlow("icon-ac", newState.ac.power === "ON");
+            }
+
+            // TV
+            if (newState.tv) {
+                setText("state-tv", `${newState.tv.power}`);
+                setGlow("icon-tv", newState.tv.power === "ON");
+            }
+
+            // Lamp
+            if (newState.lamp) {
+                setText("state-lamp", `${newState.lamp.power} • ${newState.lamp.brightness}%`);
+                setGlow("icon-lamp", newState.lamp.power === "ON");
+                const r2 = document.getElementById("range-lamp"); if (r2) r2.value = newState.lamp.brightness;
+            }
+
+            // Speaker
+            if (newState.speaker) {
+                setText("state-speaker", `${newState.speaker.power} • Vol ${newState.speaker.volume}`);
+                setGlow("icon-speaker", newState.speaker.power === "ON");
+                const spk = document.getElementById("range-speaker"); if (spk) spk.value = newState.speaker.volume;
+            }
+        });
+
+        // Emit helpers (match server events)
+        function emitToggle(id) {
+            socket.emit("toggle_device", id);
+        }
+        function emitIncrease(id) {
+            socket.emit("increase", id);
+        }
+        function emitDecrease(id) {
+            socket.emit("decrease", id);
+        }
+        function emitSetBrightness(id, val) {
+            socket.emit("set_brightness", { id: id, value: parseInt(val) });
+        }
+        function emitSetVolume(val) {
+            socket.emit("set_volume", parseInt(val));
+        }
+
+        // VOICE: request mic permission then start recognition
+        const voiceBtn = document.getElementById("voiceBtn");
+        const voiceStatus = document.getElementById("voiceStatus");
+
+        voiceBtn.addEventListener("click", async () => {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                alert("Use Chrome or Edge (Chromium) for voice control.");
+                return;
+            }
+
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                alert("Allow microphone access and try again.");
+                return;
+            }
+
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const rec = new Rec();
+            rec.lang = "en-US";
+            rec.interimResults = false;
+            rec.maxAlternatives = 1;
+
+            voiceStatus.innerText = "Listening...";
+
+            rec.onresult = (ev) => {
+                const text = ev.results[0][0].transcript.toLowerCase();
+                voiceStatus.innerText = "Heard: " + text;
+                socket.emit("voice_command", text);
+            };
+
+            rec.onerror = (e) => {
+                console.error("Speech error", e);
+                voiceStatus.innerText = "Voice error";
+            };
+
+            rec.onend = () => {
+                setTimeout(() => voiceStatus.innerText = "Ready", 400);
+            };
+
+            rec.start();
+        });
+
+        socket.on("connect", () => { voiceStatus.innerText = "Connected"; });
+        socket.on("disconnect", () => { voiceStatus.innerText = "Disconnected"; });
+
+    </script>
+</body>
+
+</html>
